@@ -1,12 +1,15 @@
 import os
 
-#os.environ['DISPLAY'] = ":0.0"
+os.environ['DISPLAY'] = ":0.0"
 #os.environ['KIVY_WINDOW'] = 'egl_rpi'
 
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
+from pidev.Joystick import Joystick
+from kivy.clock import Clock
+
 
 from pidev.MixPanel import MixPanel
 from pidev.kivy.PassCodeScreen import PassCodeScreen
@@ -14,10 +17,19 @@ from pidev.kivy.PauseScreen import PauseScreen
 from pidev.kivy import DPEAButton
 from pidev.kivy import ImageButton
 from pidev.kivy.selfupdatinglabel import SelfUpdatingLabel
+from kivy.uix.slider import Slider
+from kivy.animation import Animation
 
 from datetime import datetime
 
+
+joy = Joystick(0, True)
+
+
+
+
 time = datetime
+motorText = "motor on"
 
 MIXPANEL_TOKEN = "x"
 MIXPANEL = MixPanel("Project Name", MIXPANEL_TOKEN)
@@ -40,20 +52,59 @@ class ProjectNameGUI(App):
         return SCREEN_MANAGER
 
 
-Window.clearcolor = (1, 1, 1, 1)  # White
+Window.clearcolor = (1, .4, 1, 1)  # Black
 
 
 class MainScreen(Screen):
     """
     Class to handle the main screen and its associated touch events
     """
-
+    def __init__(self, **kw):
+        super(MainScreen, self).__init__(**kw)
+        Clock.schedule_interval(self.pressed5, 0.02)
     def pressed(self):
         """
         Function called on button touch event for button with id: testButton
         :return: None
         """
-        print("Callback from MainScreen.pressed()")
+        print("a team!")
+
+    def pressed1(self):
+
+        if self.ids.OnOff.text =="on":
+            self.ids.OnOff.text="off"
+        else:
+            self.ids.OnOff.text="on"
+
+    def pressed2(self):
+        self.ids.Counter.cow += 1
+        self.ids.Counter.text = str(self.ids.Counter.cow)
+
+    def pressed3(self):
+        if self.ids.MotorLabel.text == "motor on":
+            self.ids.MotorLabel.text = "motor off"
+        else:
+            self.ids.MotorLabel.text = "motor on"
+
+    def animate(self):
+        anim = Animation(x=-100, y=-100) + Animation(x=-100, y=100) + Animation(x=100, y=100) + Animation(x=-100, y=-100)
+        anim2 = Animation(x=0, y=0)
+        if self.ids.OnOff.text == "off":
+            anim.repeat = True
+            anim.start(self)
+        elif self.ids.OnOff.text == "on":
+            Animation.cancel_all(self)
+            anim2.start(self)
+
+    def pressed4(self):
+        SCREEN_MANAGER.current = 'pagetwo'
+
+    def pressed5(self, dt):
+        xvalue = (joy.get_axis('x')* self.width)/2
+        yvalue = (joy.get_axis('y') * self.height)/2
+        self.ids.Location.text = str(xvalue) + " " + str(yvalue)
+        self.ids.Location.x = xvalue
+        self.ids.Location.y = yvalue
 
     def admin_action(self):
         """
@@ -106,16 +157,21 @@ class AdminScreen(Screen):
         """
         quit()
 
+class pagetwo(Screen):
+    def pressed5(self):
+        SCREEN_MANAGER.current = 'main'
 
 """
 Widget additions
 """
 
 Builder.load_file('main.kv')
+Builder.load_file('pagetwo.kv')
 SCREEN_MANAGER.add_widget(MainScreen(name=MAIN_SCREEN_NAME))
 SCREEN_MANAGER.add_widget(PassCodeScreen(name='passCode'))
 SCREEN_MANAGER.add_widget(PauseScreen(name='pauseScene'))
 SCREEN_MANAGER.add_widget(AdminScreen(name=ADMIN_SCREEN_NAME))
+SCREEN_MANAGER.add_widget(pagetwo(name='pagetwo'))
 
 """
 MixPanel
@@ -138,3 +194,5 @@ if __name__ == "__main__":
     # send_event("Project Initialized")
     # Window.fullscreen = 'auto'
     ProjectNameGUI().run()
+
+
